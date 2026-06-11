@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia de Epidemiologia II</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #fafaf8; min-height: 100vh; }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: #fff; padding: 32px 24px 24px; text-align: center;
+  }
+  .hero-icon { font-size: 36px; margin-bottom: 8px; }
+  .hero h1 { font-size: 24px; font-weight: bold; letter-spacing: -0.5px; }
+  .hero p { margin-top: 8px; opacity: 0.8; font-size: 14px; }
+  .hero-badge {
+    background: rgba(255,255,255,0.1); border-radius: 8px;
+    padding: 10px 16px; margin-top: 16px; font-size: 13px; line-height: 1.5;
+  }
+
+  /* MENU */
+  #menu { padding: 20px 16px; }
+  #menu p { color: #666; font-size: 13px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card-btn {
+    background: #fff; border-radius: 14px; padding: 16px 12px;
+    cursor: pointer; text-align: left; width: 100%;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .card-btn:active { transform: scale(0.97); }
+  .card-emoji { font-size: 26px; margin-bottom: 6px; }
+  .card-titulo { font-weight: bold; font-size: 14px; color: #1a1a1a; line-height: 1.3; }
+  .card-tag {
+    font-size: 11px; margin-top: 6px; padding: 3px 8px;
+    border-radius: 8px; display: inline-block;
+  }
+  .dica {
+    background: #fff3cd; border: 1px solid #ffc107; border-radius: 12px;
+    padding: 14px; margin-top: 20px;
+  }
+  .dica-titulo { font-weight: bold; font-size: 14px; margin-bottom: 6px; }
+  .dica p { font-size: 13px; line-height: 1.6; color: #555; }
+
+  /* TEMA */
+  #tema { display: none; }
+  .tema-header { color: #fff; padding: 20px 24px; }
+  .back-btn {
+    background: rgba(255,255,255,0.2); border: none; color: #fff;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    font-size: 13px; margin-bottom: 12px; font-family: Georgia, serif;
+  }
+  .tema-emoji { font-size: 28px; margin-bottom: 4px; }
+  .tema-titulo { font-size: 22px; font-weight: bold; }
+  .tema-freq {
+    background: rgba(255,255,255,0.25); display: inline-block;
+    padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-top: 6px;
+  }
+  .topicos { padding: 16px; }
+  .topico {
+    background: #fff; border-radius: 12px; margin-bottom: 12px;
+    border: 2px solid #e8e8e4; overflow: hidden;
+  }
+  .topico.aberto { border-color: var(--cor); }
+  .topico-btn {
+    width: 100%; text-align: left; background: none; border: none;
+    padding: 16px; cursor: pointer; display: flex;
+    justify-content: space-between; align-items: center; font-family: Georgia, serif;
+  }
+  .topico-titulo { font-weight: bold; font-size: 15px; color: #2c2c2c; flex: 1; padding-right: 8px; }
+  .topico-icon { font-size: 18px; font-weight: bold; flex-shrink: 0; }
+  .topico-conteudo {
+    display: none; padding: 0 16px 16px;
+    white-space: pre-wrap; font-size: 13px; line-height: 1.7;
+    color: #333; font-family: monospace; background: #f8f8f6;
+    border-top: 1px solid #e8e8e422;
+  }
+  .topico.aberto .topico-conteudo { display: block; }
+</style>
+</head>
+<body>
+
+<!-- TELA MENU -->
+<div id="menu-view">
+  <div class="hero">
+    <div class="hero-icon">🩺</div>
+    <h1>Guia de Epidemiologia II</h1>
+    <p>Baseado nas suas notas + padrão das provas 103–111</p>
+    <div class="hero-badge"><strong>📌 8 temas · Fórmulas · Passo a passo · Gabarito histórico</strong></div>
+  </div>
+  <div id="menu">
+    <p>Toque em um tema para estudar:</p>
+    <div class="grid" id="cards"></div>
+    <div class="dica">
+      <div class="dica-titulo">⚡ Dica de última hora</div>
+      <p>A prova segue um padrão: <strong>Q1 = tipo de estudo · Q3 = S/E/VPP/VPN · Q7 ou Q9 = cálculo estatístico</strong>. Se travar, vá direto ao "Resumo Rápido" — ele tem o gabarito histórico e todas as fórmulas.</p>
+    </div>
+  </div>
+</div>
+
+<!-- TELA TEMA -->
+<div id="tema-view" style="display:none;">
+  <div class="tema-header" id="tema-header">
+    <button class="back-btn" onclick="voltarMenu()">← Voltar</button>
+    <div class="tema-emoji" id="tema-emoji"></div>
+    <div class="tema-titulo" id="tema-titulo"></div>
+    <div class="tema-freq" id="tema-freq"></div>
+  </div>
+  <div class="topicos" id="topicos-lista"></div>
+</div>
+
+<script>
+const TEMAS = [
+  {
+    id: 1, emoji: "🔬", titulo: "Tipos de Estudo", cor: "#e8534a",
+    questaoFreq: "Questão 1 — toda prova",
+    topicos: [
+      {
+        subtitulo: "⚠️ Como identificar o tipo de estudo (o mais cobrado!)",
+        conteudo: `A prova sempre descreve um cenário e pede que você identifique o tipo de estudo. Use este raciocínio:
+
+1️⃣ HÁ intervenção (o pesquisador faz algo)?
+   → SIM → EXPERIMENTAL
+      • Indivíduos isolados → Ensaio Clínico
+      • Grupos inteiros → Ensaio de Comunidade
+
+   → NÃO → OBSERVACIONAL
+
+2️⃣ (Observacional) Tem grupo controle?
+   → NÃO → DESCRITIVO
+      • 1 paciente → Relato de Caso
+      • Vários pacientes → Série de Casos
+      • Doença + exposição medidos ao mesmo tempo → Transversal
+      • Dados populacionais agregados → Ecológico
+
+   → SIM → ANALÍTICO
+      • Definido pela EXPOSIÇÃO, compara expostos vs não-expostos → Coorte
+        (pode ser prospectivo ou retrospectivo)
+      • Definido pelo DESFECHO, compara doentes vs não-doentes → Caso-Controle
+        (SEMPRE retrospectivo)`
+      },
+      {
+        subtitulo: "📊 Características de cada estudo",
+        conteudo: `COORTE
+• Definido pela exposição (quem foi exposto?)
+• Pode ser prospectivo (acompanha para frente) ou retrospectivo
+• Calcula RISCO RELATIVO (RR)
+• Boa para doenças comuns
+• Problema: perda de seguimento (viés de seleção)
+
+CASO-CONTROLE
+• Definido pelo desfecho (quem ficou doente?)
+• SEMPRE retrospectivo
+• Calcula ODDS RATIO / Razão de Chances (OR)
+• Boa para doenças raras e doenças crônicas
+• Problema: viés de memória, espaço amostral pequeno
+
+TRANSVERSAL (Corte Transversal)
+• Mede doença E exposição ao mesmo tempo
+• Calcula prevalência
+• NÃO estabelece causalidade (não sabe o que veio antes)
+• Erros de prevalência e classificação
+
+ECOLÓGICO
+• Dados de populações inteiras (agregados)
+• Não avalia nível individual → Falácia ecológica
+• Incapaz de testar hipóteses causais`
+      },
+      {
+        subtitulo: "🧪 Ensaios (Experimentais)",
+        conteudo: `ENSAIO CLÍNICO
+• Compara intervenções em indivíduos
+• Características essenciais: Randomização, Mascaramento (cego), Grupo controle
+• Tipos: paralelo, crossover, fatorial
+• Calcula Eficácia
+• Problemas: ética, adesão, término precoce (superestima efeitos)
+
+ENSAIO DE COMUNIDADE
+• Intervenção feita em grupos/comunidades inteiras
+• Não em indivíduos isolados
+• Calcula Efetividade
+• Problema: imprecisão (tendências diferentes entre comunidades)`
+      }
+    ]
+  },
+  {
+    id: 2, emoji: "📈", titulo: "Estatística Descritiva", cor: "#4a8ee8",
+    questaoFreq: "Base para várias questões",
+    topicos: [
+      {
+        subtitulo: "📐 Tipos de Variáveis",
+        conteudo: `QUALITATIVAS (Categóricas)
+• Nominais: sem ordem (sexo, cor dos olhos)
+• Ordinais: com ordem (estadiamento da doença: I, II, III, IV)
+
+QUANTITATIVAS
+• Discretas: valores inteiros, contagem (número de filhos, bactérias em urina)
+• Contínuas: medidas por aparelho, valores intermediários (peso, altura, pressão)
+
+⚡ DICA DE PROVA: Se a variável tem 2 categorias = dicotômica`
+      },
+      {
+        subtitulo: "📊 Gráficos — qual usar?",
+        conteudo: `• BARRAS → Variáveis qualitativas (categóricas)
+• HISTOGRAMA → Variáveis quantitativas contínuas
+• POLÍGONO DE FREQUÊNCIA → Frequências do histograma, curva parabólica
+• OGIVA → Frequência acumulada (eixo X = intervalos, eixo Y = % acumulada)
+• GRÁFICO DE LINHAS → Dados temporais (ver tendências no tempo)
+• BOXPLOT → Dispersão e concentração de valores`
+      },
+      {
+        subtitulo: "📦 Boxplot — leitura completa",
+        conteudo: `Estrutura do boxplot:
+• Q1 (1º quartil): 25% dos dados abaixo, 75% acima
+• Q2 (mediana): 50% / 50%
+• Q3 (3º quartil): 75% dos dados abaixo, 25% acima
+• DQ (Distância Interquartílica): Q3 - Q1
+
+Limites:
+• Limite SUPERIOR = Q3 + 1,5 × DQ
+• Limite INFERIOR = Q1 - 1,5 × DQ
+
+• Valores DENTRO dos limites = variabilidade esperada/aceitável
+• Valores FORA dos limites = outliers (pontos atípicos)
+
+Simetria: se Q2 está no centro da caixa → distribuição simétrica
+Dispersão: quanto maior a DQ, mais dispersos os dados`
+      },
+      {
+        subtitulo: "📏 Medidas de Tendência Central",
+        conteudo: `MÉDIA ARITMÉTICA
+• Soma de todos os valores / n
+• Acompanha: Desvio Padrão
+• Sensível a outliers (valores extremos puxam a média)
+
+MEDIANA
+• Valor que divide a distribuição ao meio (50%/50%)
+• Melhor que a média quando há outliers
+• Acompanha: Amplitude Interquartílica (DQ)
+
+MODA
+• Valor mais frequente na distribuição
+
+ASSIMETRIA:
+• Simétrica: média ≈ mediana ≈ moda
+• Assimetria à DIREITA (positiva): média > mediana > moda
+• Assimetria à ESQUERDA (negativa): média < mediana < moda
+
+MÉDIA GEOMÉTRICA
+• Raiz n-ésima do produto de todos os valores
+• Usada em dados assimétricos (menos distorcida por outliers)
+
+MÉDIA HARMÔNICA
+• Usada em velocidades, taxas e proporções`
+      },
+      {
+        subtitulo: "📉 Medidas de Variabilidade",
+        conteudo: `VARIÂNCIA (S²)
+• Variabilidade dos dados em torno da média, ao quadrado, dividido por (n-1)
+• Ex: dados 2,4,6 → média=4 → (4-2)²+(4-4)²+(4-6)² = 4+0+4 = 8 / (3-1) = 4
+
+DESVIO PADRÃO (S)
+• Raiz quadrada da variância
+• Na mesma unidade dos dados
+• Ex: se variância = 4 → DP = 2
+
+COEFICIENTE DE VARIAÇÃO (CV)
+• CV = (DP / média) × 100
+• CV baixo = dados pouco dispersos
+• CV alto = dados muito dispersos
+• Permite comparar dispersão entre grupos com médias diferentes
+
+Z-SCORE (Escore Padronizado)
+• Z = (x - média) / DP
+• Z=0: valor igual à média
+• Z>0: valor acima da média
+• Z<0: valor abaixo da média
+• Z=2: valor está 2 desvios padrão acima da média`
+      }
+    ]
+  },
+  {
+    id: 3, emoji: "🧪", titulo: "Testes Diagnósticos", cor: "#27ae60",
+    questaoFreq: "Questão 3 — toda prova",
+    topicos: [
+      {
+        subtitulo: "🗓️ A tabela 2×2 — decore isso!",
+        conteudo: `                  DOENTE    NÃO-DOENTE
+  Teste POSITIVO  →   a           b
+  Teste NEGATIVO  →   c           d
+
+a = Verdadeiro Positivo (VP): doente, teste positivo ✅
+b = Falso Positivo (FP): sadio, teste positivo ❌
+c = Falso Negativo (FN): doente, teste negativo ❌
+d = Verdadeiro Negativo (VN): sadio, teste negativo ✅`
+      },
+      {
+        subtitulo: "🎯 Sensibilidade e Especificidade",
+        conteudo: `SENSIBILIDADE (S) — olho pra DOENÇA, pergunto pelo TESTE
+• "Entre os doentes, quantos o teste achou?"
+• S = a / (a + c) = VP / (VP + FN)
+• Alta sensibilidade → poucos FALSOS NEGATIVOS
+• Usa quando: doença de ALTA PREVALÊNCIA, rastreamento inicial
+• Mnemônico: SN-OUT (Sensibilidade alta, resultado negativo exclui a doença)
+
+ESPECIFICIDADE (E) — olho pro TESTE, pergunto pela DOENÇA
+• "Entre os sadios, quantos o teste identificou corretamente?"
+• E = d / (d + b) = VN / (VN + FP)
+• Alta especificidade → poucos FALSOS POSITIVOS
+• Usa quando: doença de BAIXA PREVALÊNCIA, confirmação diagnóstica
+• Mnemônico: SP-IN (Especificidade alta, resultado positivo confirma a doença)
+
+⚡ IMPORTANTE: Sensibilidade e Especificidade são INTRÍNSECAS ao teste
+(não dependem da prevalência!)`
+      },
+      {
+        subtitulo: "🔮 Valores Preditivos (VPP e VPN)",
+        conteudo: `VPP (Valor Preditivo Positivo)
+• "Em todos os positivos, quantos têm mesmo a doença?"
+• VPP = a / (a + b) = VP / (VP + FP)
+• Acompanha a ESPECIFICIDADE
+• ↑ Prevalência → ↑ VPP
+
+VPN (Valor Preditivo Negativo)
+• "Em todos os negativos, quantos realmente não têm a doença?"
+• VPN = d / (d + c) = VN / (VN + FN)
+• Acompanha a SENSIBILIDADE
+• ↑ Prevalência → ↓ VPN
+
+EFEITO DA PREVALÊNCIA:
+• Doença ALTA PREVALÊNCIA: ↑VPP, ↓VPN (mais doentes → mais chance de positivo real)
+• Doença BAIXA PREVALÊNCIA: ↓VPP, ↑VPN (poucos doentes → positivo pode ser falso)`
+      },
+      {
+        subtitulo: "🔗 Testes em Paralelo e em Série",
+        conteudo: `TESTES EM PARALELO (ao mesmo tempo):
+• Positivo se QUALQUER UM for positivo
+• Negativo se TODOS forem negativos
+• ↑ SENSIBILIDADE, ↑ VPN
+• Usa para RASTREAMENTO (não quero perder doentes)
+
+TESTES EM SÉRIE (um após o outro):
+• Positivo somente se TODOS forem positivos
+• Negativo se QUALQUER UM for negativo
+• ↑ ESPECIFICIDADE, ↑ VPP
+• Usa para CONFIRMAÇÃO (não quero tratar sadios)
+
+CURVA ROC:
+• Gráfico de Sensibilidade × (1 - Especificidade)
+• Joelho da curva = ponto de máxima sensibilidade E especificidade simultaneamente`
+      }
+    ]
+  },
+  {
+    id: 4, emoji: "⚡", titulo: "Variabilidade e Vieses", cor: "#8e44ad",
+    questaoFreq: "Questão 5 — toda prova",
+    topicos: [
+      {
+        subtitulo: "🎲 Tipos de Variabilidade",
+        conteudo: `VARIABILIDADE ALEATÓRIA
+• Natural e imprevisível — acaso
+• Esperada em qualquer estudo
+
+VARIABILIDADE SISTEMÁTICA (VIÉS)
+• Segue padrão previsível — relacionada a viés
+• Afeta validade e acurácia do estudo`
+      },
+      {
+        subtitulo: "❌ Viés de Seleção",
+        conteudo: `• Ocorre quando os grupos comparados não são comparáveis
+• Pode ocorrer em qualquer etapa do estudo
+
+Como identificar no texto: grupos selecionados de forma diferente, critérios de inclusão/exclusão enviesados, perda de seguimento diferencial entre grupos
+
+Como REDUZIR:
+• Critérios de inclusão e exclusão bem definidos
+• Seleção aleatória dos participantes
+• Randomização dos grupos
+• Recrutamento da mesma população de origem
+• Minimizar perdas de seguimento`
+      },
+      {
+        subtitulo: "📝 Viés de Informação",
+        conteudo: `• Erro na coleta ou medição dos dados
+
+VIÉS DE MEMÓRIA (recall bias):
+• Clássico do caso-controle
+• Pessoas com o desfecho (casos) tendem a lembrar melhor das exposições passadas
+• Os controles lembram menos
+
+VIÉS DO ENTREVISTADOR:
+• O entrevistador sabe quem é caso e quem é controle
+• Faz mais perguntas para o caso sem perceber
+
+Como REDUZIR:
+• Padronizar a coleta de dados
+• Usar instrumentos validados e calibrados
+• Treinar entrevistadores
+• Cegamento / mascaramento`
+      },
+      {
+        subtitulo: "🌀 Variável de Confundimento",
+        conteudo: `• Mistura o efeito de uma terceira variável com os efeitos da exposição e do desfecho de interesse
+• Distorce a associação verdadeira
+
+Ex: estudar se café causa infarto. Fumantes bebem mais café. O cigarro é confundidor!
+
+Como REDUZIR:
+• Randomização (distribui confundidores igualmente entre os grupos)
+• Restrições (incluir só pessoas sem a variável confundidora)
+• Pareamento (parear casos e controles pela variável)
+• Estratificação (analisar separadamente por grupo do fator)
+• Ajuste multivariado (modelos estatísticos)`
+      },
+      {
+        subtitulo: "✅ Validade",
+        conteudo: `VALIDADE INTERNA
+• O estudo reflete acuradamente a real situação da população em estudo
+• Depende de: reduzir vieses, grupo controle, randomização, padronização da coleta
+
+VALIDADE EXTERNA (Generalizabilidade)
+• O resultado de um estudo é aplicável a outra população
+• Depende de: representatividade da amostra, tamanho da amostra`
+      }
+    ]
+  },
+  {
+    id: 5, emoji: "🏔️", titulo: "Distribuição Normal (Gauss)", cor: "#e67e22",
+    questaoFreq: "Base para Z-score e testes",
+    topicos: [
+      {
+        subtitulo: "🔔 Características da Curva Normal",
+        conteudo: `• Formato de sino (campana)
+• Simétrica em torno da média
+• Média = Mediana = Moda
+• 50% dos valores acima da média, 50% abaixo
+
+REGRA EMPÍRICA (decore!):
+• μ ± 1DP → 68% das observações
+• μ ± 2DP → 95% das observações
+• μ ± 3DP → 99,7% das observações
+
+Usos na medicina:
+• Faixa de referência para exames laboratoriais = μ ± 2DP (inclui 95% da população saudável)
+• Quanto maior a amostra, menor a amplitude da distribuição`
+      },
+      {
+        subtitulo: "📐 Curva de Gauss Reduzida (Distribuição Z)",
+        conteudo: `• Média = 0, Desvio Padrão = 1
+• Padroniza qualquer distribuição normal
+
+Z = (x - média) / DP
+
+⚡ PASSO A PASSO para calcular percentis:
+1. Calcule Z = (x - média) / DP
+2. Consulte a tabela Z → área acumulada à esquerda
+3. Interprete: a área = % de indivíduos abaixo daquele valor
+
+Exemplo: média=100, DP=15, valor=130
+Z = (130-100)/15 = 2,0 → tabela Z: 0,9772 → 97,7% estão abaixo de 130
+
+SENSIBILIDADE pelo Z-score:
+• Área à DIREITA da curva para doentes = Sensibilidade (% Verdadeiros Positivos)
+• Área à ESQUERDA da curva para saudáveis = Especificidade (% Verdadeiros Negativos)`
+      }
+    ]
+  },
+  {
+    id: 6, emoji: "🎯", titulo: "Teste de Hipóteses", cor: "#16a085",
+    questaoFreq: "Base para questões de cálculo",
+    topicos: [
+      {
+        subtitulo: "🧠 Conceitos Fundamentais",
+        conteudo: `HIPÓTESE NULA (H₀): Os grupos são IGUAIS (não há diferença)
+• Ex: H₀: μ₁ = μ₂ (as médias são iguais)
+• Ex: H₀: P₁ = P₂ (as proporções são iguais)
+
+HIPÓTESE ALTERNATIVA (H₁): Os grupos são DIFERENTES
+• Ex: H₁: μ₁ ≠ μ₂
+
+NÍVEL DE SIGNIFICÂNCIA (α):
+• Probabilidade máxima de cometer Erro Tipo I
+• Geralmente α = 0,05 (5%)
+• Se p-valor < α → REJEITA H₀ (há diferença significativa)
+• Se p-valor ≥ α → ACEITA H₀
+
+P-VALOR:
+• Probabilidade de obter aquele resultado (ou mais extremo) por acaso
+• Quanto menor o p → mais evidências contra H₀`
+      },
+      {
+        subtitulo: "⚠️ Erros Tipo I e Tipo II",
+        conteudo: `          H₀ VERDADEIRA    H₀ FALSA
+ACEITA H₀:  Correto ✅      ERRO TIPO II (β) ❌
+REJEITA H₀: ERRO TIPO I (α) ❌   Correto ✅
+
+ERRO TIPO I (α) — Falso Positivo
+• "Vejo diferença onde não existe"
+• Rejeitar H₀ quando ela é verdadeira
+• É o PIOR erro em medicina
+• Reduz: ↓ nível de significância (usar α=0,01 em vez de 0,05)
+
+ERRO TIPO II (β) — Falso Negativo
+• "Aceito H₀ quando há diferença real"
+• Aceitar H₀ quando ela é falsa
+• Reduz: ↑ tamanho da amostra
+
+PODER DO TESTE (1-β):
+• Capacidade de identificar diferenças que realmente existem
+• Rejeitar H₀ quando ela é de fato falsa
+• Quanto maior a amostra → maior o poder`
+      }
+    ]
+  },
+  {
+    id: 7, emoji: "🧮", titulo: "Testes Estatísticos", cor: "#c0392b",
+    questaoFreq: "Questões de cálculo — muito cobrado",
+    topicos: [
+      {
+        subtitulo: "🗺️ Mapa Mental — Qual teste usar?",
+        conteudo: `Pergunta-chave 1: As amostras são PAREADAS ou INDEPENDENTES?
+Pergunta-chave 2: A variável resposta é CATEGÓRICA ou CONTÍNUA?
+Pergunta-chave 3: Quantos grupos?
+
+VARIÁVEL RESPOSTA CATEGÓRICA (proporções):
+┌─────────────────────────────────────────────────────────┐
+│ 2 grupos independentes, n grande (≥5 em cada célula)   │
+│ → QUI-QUADRADO (χ²)                                    │
+│                                                         │
+│ 2 grupos independentes, n pequeno (<5 em alguma célula)│
+│ → TESTE EXATO DE FISHER                                │
+│                                                         │
+│ 1 grupo pareado (antes-depois)                         │
+│ → MCNEMAR                                              │
+└─────────────────────────────────────────────────────────┘
+
+VARIÁVEL RESPOSTA CONTÍNUA (médias):
+┌─────────────────────────────────────────────────────────┐
+│ 2 grupos independentes, distribuição normal            │
+│ → T DE STUDENT (amostras independentes)               │
+│                                                         │
+│ 1 grupo pareado (antes-depois), distribuição normal    │
+│ → T PAREADO                                            │
+│                                                         │
+│ Variável contínua SEM distribuição normal:             │
+│ • 2 grupos independentes → MANN-WHITNEY               │
+│ • Grupos pareados → WILCOXON                           │
+│ • Mais de 2 grupos independentes → KRUSKAL-WALLIS     │
+│                                                         │
+│ Múltiplas variáveis (multivariada)                     │
+│ → REGRESSÃO LOGÍSTICA                                  │
+└─────────────────────────────────────────────────────────┘`
+      },
+      {
+        subtitulo: "χ² QUI-QUADRADO — Passo a Passo",
+        conteudo: `Uso: variáveis categóricas independentes
+
+PASSO 1 — Monte a tabela de contingência:
+         DOENTE   NÃO-DOENTE   TOTAL
+EXPOSTO    a          b         a+b
+NÃO EXP.   c          d         c+d
+TOTAL     a+c        b+d          N
+
+PASSO 2 — Calcule as frequências ESPERADAS:
+E = (soma da linha × soma da coluna) / total geral
+E₁ = (a+b) × (a+c) / N
+E₂ = (a+b) × (b+d) / N  ... e assim por diante
+
+PASSO 3 — Calcule χ²:
+χ² = Σ (O - E)² / E    (soma para cada célula)
+
+PASSO 4 — Calcule os graus de liberdade:
+gl = (nº linhas - 1) × (nº colunas - 1)
+Para tabela 2×2: gl = (2-1) × (2-1) = 1
+
+PASSO 5 — Consulte a tabela χ²:
+• Para gl=1 e α=0,05: valor crítico = 3,841
+• Se χ² calculado > 3,841 → p < 0,05 → REJEITA H₀ (há associação)
+• Se χ² calculado < 3,841 → p > 0,05 → ACEITA H₀`
+      },
+      {
+        subtitulo: "T DE STUDENT — Passo a Passo",
+        conteudo: `Uso: comparar 2 médias, amostras independentes, distribuição normal
+
+PASSO 1 — Calcule a variância combinada (Sp²):
+Sp² = [(n₁-1)×S₁² + (n₂-1)×S₂²] / (n₁+n₂-2)
+
+(sendo S₁ e S₂ os desvios padrão de cada grupo)
+
+PASSO 2 — Calcule t:
+t = (x̄₂ - x̄₁) / √[Sp² × (1/n₁ + 1/n₂)]
+
+PASSO 3 — Graus de liberdade:
+gl = n₁ + n₂ - 2
+
+PASSO 4 — Consulte a tabela t:
+• Se |t calculado| > t da tabela → p < α → REJEITA H₀
+
+Exemplo (da prova):
+n₁=1973, x̄₁=244,7, S₁=33,7; n₂=1958, x̄₂=272,5, S₂=31,4
+Sp² = (1972×33,7² + 1957×31,4²) / (1973+1958-2) ≈ 1061,11
+t = (272,5-244,7) / √[1061,11×(1/1973+1/1958)] ≈ 26,75
+gl = 1973+1958-2 = 3929 → p<0,01 → REJEITA H₀`
+      },
+      {
+        subtitulo: "🎲 Medidas de Efeito (Risco Relativo e OR)",
+        conteudo: `Tabela 2×2:
+         DOENTE   NÃO-DOENTE   TOTAL
+EXPOSTO    a          b         a+b
+NÃO EXP.   c          d         c+d
+
+RISCO RELATIVO (RR) — Coorte / Prospectivo
+• RR = [a/(a+b)] / [c/(c+d)]
+• RR = 1: sem associação
+• RR > 1: fator de RISCO (exposto tem mais doença)
+• RR < 1: fator de PROTEÇÃO (exposto tem menos doença)
+
+Magnitude: 1-2 = pequeno | 2-3 = moderado | >3 = grande
+Proteção: até 50% = pequeno | >50% = grande
+
+ODDS RATIO / RAZÃO DE CHANCES (OR) — Caso-Controle / Retrospectivo
+• OR = (a×d) / (b×c)
+• OR = 1: sem associação
+• OR > 1: fator de risco
+• OR < 1: fator de proteção
+
+⚡ INTERVALO DE CONFIANÇA:
+• Se o IC passa pelo 1 (ex: 0,8-1,4) → NÃO significativo
+• Se o IC não passa pelo 1 (ex: 1,2-3,5) → Significativo`
+      }
+    ]
+  },
+  {
+    id: 8, emoji: "📋", titulo: "Resumo Rápido para Prova", cor: "#2c3e50",
+    questaoFreq: "Leia 1h antes da prova",
+    topicos: [
+      {
+        subtitulo: "🚨 Os 10 pontos mais cobrados",
+        conteudo: `1. TIPO DE ESTUDO: definido pela EXPOSIÇÃO = Coorte | pelo DESFECHO = Caso-controle | sem controle = Descritivo | com intervenção = Experimental
+
+2. CASO-CONTROLE: SEMPRE retrospectivo. Calcula OR. Risco de viés de memória.
+
+3. SENSIBILIDADE: a/(a+c). Alta → poucos falsos negativos. Bom para rastreamento.
+
+4. ESPECIFICIDADE: d/(d+b). Alta → poucos falsos positivos. Bom para confirmação.
+
+5. VPP e VPN: dependem da prevalência. S e E são intrínsecas ao teste (independem da prevalência).
+
+6. PARALELO: ↑ Sensibilidade. SÉRIE: ↑ Especificidade.
+
+7. ERRO TIPO I (α): falso positivo, ver diferença onde não existe. PIOR ERRO.
+
+8. QUI-QUADRADO: variáveis categóricas independentes. Tabela 2×2 → gl=1 → crítico 3,841 (α=5%)
+
+9. FISHER: quando frequência esperada < 5 em alguma célula.
+
+10. VIÉS DE CONFUNDIMENTO: terceira variável que mistura os efeitos. Reduz com randomização.`
+      },
+      {
+        subtitulo: "🔑 Fórmulas essenciais",
+        conteudo: `Z-score: Z = (x - média) / DP
+
+Sensibilidade: S = a / (a+c)
+Especificidade: E = d / (d+b)
+VPP = a / (a+b)
+VPN = d / (d+c)
+
+Risco Relativo: RR = [a/(a+b)] / [c/(c+d)]
+Odds Ratio: OR = (a×d) / (b×c)
+
+Qui-quadrado: χ² = Σ(O-E)²/E
+Frequência esperada: E = (total linha × total coluna) / total geral
+Graus de liberdade: gl = (nL-1) × (nC-1)
+
+T de Student: t = (x̄₂-x̄₁) / √[Sp²(1/n₁+1/n₂)]
+Variância combinada: Sp² = [(n₁-1)S₁²+(n₂-1)S₂²] / (n₁+n₂-2)
+GL do t: gl = n₁+n₂-2
+
+Coeficiente de variação: CV = (DP/média) × 100`
+      },
+      {
+        subtitulo: "🗂️ Gabarito histórico das provas (padrão das questões)",
+        conteudo: `Com base nas questões compiladas (provas 103-111):
+
+QUESTÃO 1 — Tipos de estudo (identificar o design pelo cenário)
+QUESTÃO 2 — Limitações e vieses dos estudos
+QUESTÃO 3 — S, E, VPP, VPN (calcular a partir de tabela 2×2)
+QUESTÃO 4 — Z-score e Curva Normal (calcular percentil)
+QUESTÃO 5 — Identificar vieses em um artigo real
+QUESTÃO 6 — Teste de hipóteses (enunciar H₀ e H₁)
+QUESTÃO 7 — Qui-quadrado ou T de Student (calcular passo a passo)
+QUESTÃO 8 — Medidas de efeito (RR ou OR + Intervalo de Confiança)
+QUESTÃO 9 — T de Student com dados completos
+QUESTÃO 10 — Interpretação de IC e p-valor`
+      }
+    ]
+  }
+];
+
+// Renderiza os cards do menu
+function renderMenu() {
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  TEMAS.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'card-btn';
+    btn.style.border = `2px solid ${t.cor}`;
+    btn.innerHTML = `
+      <div class="card-emoji">${t.emoji}</div>
+      <div class="card-titulo">${t.titulo}</div>
+      <div class="card-tag" style="color:${t.cor};background:${t.cor}22">${t.questaoFreq.split('—')[0].trim()}</div>
+    `;
+    btn.onclick = () => abrirTema(t.id);
+    container.appendChild(btn);
+  });
+}
+
+function abrirTema(id) {
+  const t = TEMAS.find(x => x.id === id);
+  if (!t) return;
+
+  document.getElementById('menu-view').style.display = 'none';
+  document.getElementById('tema-view').style.display = 'block';
+
+  const header = document.getElementById('tema-header');
+  header.style.background = t.cor;
+  document.getElementById('tema-emoji').textContent = t.emoji;
+  document.getElementById('tema-titulo').textContent = t.titulo;
+  document.getElementById('tema-freq').textContent = t.questaoFreq;
+
+  const lista = document.getElementById('topicos-lista');
+  lista.innerHTML = '';
+
+  t.topicos.forEach((tp, idx) => {
+    const div = document.createElement('div');
+    div.className = 'topico';
+    div.style.setProperty('--cor', t.cor);
+
+    const btn = document.createElement('button');
+    btn.className = 'topico-btn';
+    btn.innerHTML = `
+      <span class="topico-titulo">${tp.subtitulo}</span>
+      <span class="topico-icon" style="color:${t.cor}">+</span>
+    `;
+
+    const conteudo = document.createElement('div');
+    conteudo.className = 'topico-conteudo';
+    conteudo.style.borderTopColor = t.cor + '33';
+    conteudo.textContent = tp.conteudo;
+
+    btn.onclick = () => {
+      const estaAberto = div.classList.contains('aberto');
+      // fecha todos
+      lista.querySelectorAll('.topico').forEach(d => {
+        d.classList.remove('aberto');
+        d.querySelector('.topico-icon').textContent = '+';
+      });
+      if (!estaAberto) {
+        div.classList.add('aberto');
+        btn.querySelector('.topico-icon').textContent = '−';
+      }
+    };
+
+    div.appendChild(btn);
+    div.appendChild(conteudo);
+    lista.appendChild(div);
+  });
+
+  window.scrollTo(0, 0);
+}
+
+function voltarMenu() {
+  document.getElementById('tema-view').style.display = 'none';
+  document.getElementById('menu-view').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+renderMenu();
+</script>
+</body>
+</html>
